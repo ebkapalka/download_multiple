@@ -1,15 +1,17 @@
-from typing import List
+from typing import List, Optional
 import youtube_dl
 import pprint
 
 
-def download_urls(urls: List[str]) -> List[str]:
+def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
     """
     Download a list of URLs using youtube-dl
     :param urls: list of URLs (strings)
+    :param ydl_opts: dictionary of youtube-dl parameters / options
     :return: list of URLs that could not have videos downloaded
     """
-    ydl_opts = {}
+    if not ydl_opts:
+        ydl_opts = {}
     skipped = []
     for index, page in enumerate(urls):
         try:
@@ -36,4 +38,5 @@ if __name__ == '__main__':
     pages = [
         # put URLs here
     ]
-    download_urls(pages)
+    options = {}
+    download_urls(pages, options)
