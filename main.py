@@ -1,6 +1,7 @@
 from typing import List, Optional
 import youtube_dl
 import pprint
+import time
 
 
 def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
@@ -14,9 +15,12 @@ def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
         ydl_opts = {}
     skipped = []
     for index, page in enumerate(urls):
+        start_time = time.time()
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([page])
+                elapsed = start_time-time.time()
+                print(f'Elapsed: {elapsed}')
         except Exception as e:
             print(f'Exception: {e}')
             print('Failed, retrying one more time')
