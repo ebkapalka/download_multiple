@@ -19,8 +19,8 @@ def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([page])
-                elapsed = start_time-time.time()
-                print(f'Elapsed: {elapsed}')
+                elapsed = time.time() - start_time
+                print(f'Elapsed: {elapsed / 60:.2f}m')
         except Exception as e:
             print(f'Exception: {e}')
             print('Failed, retrying one more time')
@@ -39,8 +39,12 @@ def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
 
 
 if __name__ == '__main__':
+    app_start = time.time()
     pages = [
         # put URLs here
+        """"""
     ]
     options = {}
     download_urls(pages, options)
+    app_elapsed = time.time() - app_start
+    print(f'Elapsed: {app_elapsed / 60:.2f}m')
