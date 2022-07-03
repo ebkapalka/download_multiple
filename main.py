@@ -42,9 +42,10 @@ if __name__ == '__main__':
     app_start = time.time()
     pages = [
         # put URLs here
-        """"""
     ]
-    options = {}
+    options = {
+        'outtmpl': 'out/%(title)s-%(id)s.%(ext)s'
+    }
     download_urls(pages, options)
     app_elapsed = time.time() - app_start
     print(f'Elapsed: {app_elapsed / 60:.2f}m')
