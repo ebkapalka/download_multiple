@@ -1,4 +1,4 @@
-from threading import Thread
+from threading import Thread, Lock
 from typing import List
 from queue import Queue
 from time import time
@@ -7,11 +7,25 @@ import time
 
 
 options = {}
+counter = 0
+thread_time = 0.0
+
+
+class FakeLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        pass
 
 
 class DownloadWorker(Thread):
-    def __init__(self, queue):
+    def __init__(self, queue, lock):
         Thread.__init__(self)
+        self.lock = lock
         self.queue = queue
 
     def run(self):
@@ -22,34 +36,52 @@ class DownloadWorker(Thread):
                 file_name = get_video_name(url)
                 failed = download_url(url)
                 elapsed = time.time() - start_time
+                count = self.update_globals(elapsed)
                 elapsed = f'{elapsed / 60:.2f}m'
                 if failed:
-                    print(f'({elapsed}) - Failed to download {file_name}')
+                    print(f'({elapsed}, {count}/{total_pages}) - '
+                          f'Failed to download {file_name}')
                 else:
-                    print(f'({elapsed}) - Downloaded {file_name}')
+                    print(f'({elapsed}, {count}/{total_pages}) - '
+                          f'Downloaded {file_name}')
             finally:
                 self.queue.task_done()
 
+    def update_globals(self, seconds) -> int:
+        global thread_time
+        global counter
+        self.lock.acquire()
 
-def download_url(url: str, tc=2) -> bool:
+        local_counter = counter
+        local_counter += 1
+        counter = local_counter
+
+        local_thread_time = thread_time
+        local_thread_time += seconds
+        thread_time = local_thread_time
+
+        self.lock.release()
+        return local_counter
+
+
+def download_url(url: str, try_count=4) -> bool:
     """
     Download a list of URLs using youtube-dl
     :param url: url to attempt download from
-    :param tc: max number of retries if need-be
+    :param try_count: max number of retries if need-be
     :return: list of URLs that could not have videos downloaded
     """
     skipped = True
-    try_count = int(tc)
-    while try_count > 0:
+    failures = 0
+    while failures < try_count:
         try:
             with youtube_dl.YoutubeDL(options) as ydl:
                 ydl.download([url])
                 skipped = False
                 break
         except Exception as e:
-            print(e, 'Exception in download_url')
-            print(f'{try_count}/{tc} -- failed to download')
-            try_count -= 1
+            failures += 1
+            print(f'{failures} of {try_count} -- failed to download: {e}')
     return skipped
 
 
@@ -61,8 +93,9 @@ def start_downloads(urls: List[str], thread_count=8) -> None:
     :return: None
     """
     queue = Queue()
+    lock = Lock()
     for _ in range(thread_count):
-        worker = DownloadWorker(queue)
+        worker = DownloadWorker(queue, lock)
         worker.daemon = True
         worker.start()
     for link in urls:
@@ -93,8 +126,13 @@ if __name__ == '__main__':
     ]
     options = {
         'outtmpl': 'out/%(title)s-%(id)s.%(ext)s',
-        'quiet': True
+        'quiet': True,
+        'no-warnings': True,
+        "logger": FakeLogger()
     }
+    pages = list(set(pages))
+    total_pages = len(pages)
     start_downloads(urls=pages)
     app_elapsed = time.time() - app_start
     print(f'Elapsed: {app_elapsed / 60:.2f}m')
+    print(f'Thread Elapsed: {thread_time / 60:.2f}m')
