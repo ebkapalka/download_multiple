@@ -1,9 +1,8 @@
-from typing import List, Optional
 from threading import Thread
+from typing import List
 from queue import Queue
 from time import time
 import youtube_dl
-import pprint
 import time
 
 
@@ -32,14 +31,15 @@ class DownloadWorker(Thread):
                 self.queue.task_done()
 
 
-def download_url(url: str, try_count=2) -> bool:
+def download_url(url: str, tc=2) -> bool:
     """
     Download a list of URLs using youtube-dl
     :param url: url to attempt download from
-    :param try_count: max number of retries if need-be
+    :param tc: max number of retries if need-be
     :return: list of URLs that could not have videos downloaded
     """
     skipped = True
+    try_count = int(tc)
     while try_count > 0:
         try:
             with youtube_dl.YoutubeDL(options) as ydl:
@@ -47,16 +47,18 @@ def download_url(url: str, try_count=2) -> bool:
                 skipped = False
                 break
         except Exception as e:
+            print(e, 'Exception in download_url')
+            print(f'{try_count}/{tc} -- failed to download')
             try_count -= 1
     return skipped
 
 
-def start_downloads(urls: List[str], thread_count=8):
+def start_downloads(urls: List[str], thread_count=8) -> None:
     """
-
-    :param urls:
-    :param thread_count:
-    :return:
+    Populate queue and start worker threads to download videos
+    :param urls: list of URLs to download videos from
+    :param thread_count: number of worker threads to use.  Default 8
+    :return: None
     """
     queue = Queue()
     for _ in range(thread_count):
@@ -70,9 +72,9 @@ def start_downloads(urls: List[str], thread_count=8):
 
 def get_video_name(url: str) -> str:
     """
-
-    :param url:
-    :return:
+    Retrieve name of video to be downloaded
+    :param url: url of video to get name of
+    :return: name of video OR original URL
     """
     f_name = url
     try:
@@ -82,40 +84,6 @@ def get_video_name(url: str) -> str:
     except Exception as e:
         print(e)
     return f_name
-
-
-def download_urls(urls: List[str], ydl_opts: Optional = None) -> List[str]:
-    """
-    Download a list of URLs using youtube-dl
-    :param urls: list of URLs (strings)
-    :param ydl_opts: dictionary of youtube-dl parameters / options
-    :return: list of URLs that could not have videos downloaded
-    """
-    if not ydl_opts:
-        ydl_opts = {}
-    skipped = []
-    for index, page in enumerate(urls):
-        start_time = time.time()
-        try:
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([page])
-                elapsed = time.time() - start_time
-                print(f'Elapsed: {elapsed / 60:.2f}m')
-        except Exception as e:
-            print(f'Exception: {e}')
-            print('Failed, retrying one more time')
-            try:
-                with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([page])
-            except Exception as e:
-                print(f'Exception: {e}')
-                print(f'Failed twice, skipping {page}')
-                skipped.append(page)
-        print(f'Completed {index - len(skipped) + 1}/{len(urls)}')
-    if skipped:
-        print(f'Failed to download {len(skipped)} videos:')
-        pprint.pprint(skipped)
-    return skipped
 
 
 if __name__ == '__main__':
