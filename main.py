@@ -34,6 +34,7 @@ class DownloadWorker(Thread):
             try:
                 start_time = time.time()
                 file_name = get_video_name(url)
+                print(f'    Starting {file_name}')
                 failed = download_url(url)
                 elapsed = time.time() - start_time
                 count = self.update_globals(elapsed)
@@ -71,21 +72,20 @@ def download_url(url: str, try_count=4) -> bool:
     :param try_count: max number of retries if need-be
     :return: list of URLs that could not have videos downloaded
     """
-    skipped = True
+    # TODO: change bool from "skipped" to "success" for readability
     failures = 0
     while failures < try_count:
         try:
             with youtube_dl.YoutubeDL(options) as ydl:
                 ydl.download([url])
-                skipped = False
-                break
+                return False
         except Exception as e:
             failures += 1
             print(f'{failures} of {try_count} -- failed to download: {e}')
-    return skipped
+    return True
 
 
-def start_downloads(urls: List[str], thread_count=8) -> None:
+def start_downloads(urls: List[str], thread_count=16) -> None:
     """
     Populate queue and start worker threads to download videos
     :param urls: list of URLs to download videos from
@@ -119,6 +119,17 @@ def get_video_name(url: str) -> str:
     return f_name
 
 
+def remove_duplicates(seq: any) -> List[any]:
+    """
+    Fast function to remove duplicates while preserving order
+    :param seq: iterable to remove duplicates from
+    :return: list of the object type from the iterable
+    """
+    seen = set()
+    seen_add = seen.add
+    return [x for x in seq if not (x in seen or seen_add(x))]
+
+
 if __name__ == '__main__':
     app_start = time.time()
     pages = [
@@ -130,9 +141,9 @@ if __name__ == '__main__':
         'no-warnings': True,
         "logger": FakeLogger()
     }
-    pages = list(set(pages))
+    pages = remove_duplicates(pages)
     total_pages = len(pages)
     start_downloads(urls=pages)
     app_elapsed = time.time() - app_start
-    print(f'Elapsed: {app_elapsed / 60:.2f}m')
+    print(f'Actual Elapsed: {app_elapsed / 60:.2f}m')
     print(f'Thread Elapsed: {thread_time / 60:.2f}m')
