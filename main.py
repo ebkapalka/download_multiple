@@ -34,12 +34,12 @@ class DownloadWorker(Thread):
             try:
                 start_time = time.time()
                 file_name = get_video_name(url)
-                print(f'    Starting {file_name}')
-                failed = download_url(url)
+                print(f'    Starting {file_name.strip()}')
+                success = download_url(url)
                 elapsed = time.time() - start_time
                 count = self.update_globals(elapsed)
                 elapsed = f'{elapsed / 60:.2f}m'
-                if failed:
+                if not success:
                     print(f'({elapsed}, {count}/{total_pages}) - '
                           f'Failed to download {file_name}')
                 else:
@@ -72,17 +72,17 @@ def download_url(url: str, try_count=4) -> bool:
     :param try_count: max number of retries if need-be
     :return: list of URLs that could not have videos downloaded
     """
-    # TODO: change bool from "skipped" to "success" for readability
     failures = 0
     while failures < try_count:
         try:
             with youtube_dl.YoutubeDL(options) as ydl:
                 ydl.download([url])
-                return False
+                return True
         except Exception as e:
             failures += 1
-            print(f'{failures} of {try_count} -- failed to download: {e}')
-    return True
+            print(f'{failures} of {try_count} '
+                  f'-- failed to download: {e}')
+    return False
 
 
 def start_downloads(urls: List[str], thread_count=16) -> None:
@@ -115,7 +115,7 @@ def get_video_name(url: str) -> str:
             info = ydl.extract_info(url, download=False)
             f_name = ydl.prepare_filename(info)
     except Exception as e:
-        print(e)
+        print('Error in get_video_name:', e)
     return f_name
 
 
