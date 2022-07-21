@@ -1,8 +1,10 @@
+from utils.fakelogger import FakeLogger
 from threading import Thread, Lock
 from typing import List
 from queue import Queue
 import youtube_dl
 import time
+import os
 
 
 options = {}
@@ -121,3 +123,14 @@ def get_video_name(url: str) -> str:
     except Exception as e:
         print('Error in get_video_name:', e)
     return f_name
+
+
+def generate_options(path: str, template='%(title)s-%(id)s.%(ext)s') -> dict:
+    path = os.path.join(path, template)
+    print(path)
+    return {
+        'outtmpl': path,
+        'quiet': True,
+        'no-warnings': True,
+        "logger": FakeLogger()
+    }
