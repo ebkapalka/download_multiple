@@ -132,5 +132,5 @@ def generate_options(path: str, template='%(title)s-%(id)s.%(ext)s') -> dict:
         'outtmpl': path,
         'quiet': True,
         'no-warnings': True,
-        "logger": FakeLogger()
+        'logger': FakeLogger()
     }
