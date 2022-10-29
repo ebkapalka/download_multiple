@@ -1,7 +1,6 @@
 from utils.download import start_downloads, generate_options
 from utils.general import remove_duplicates
 
-
 if __name__ == '__main__':
     pages = [
         # put URLs here

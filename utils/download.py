@@ -85,11 +85,12 @@ def download_url(url: str, try_count=4) -> bool:
     return False
 
 
-def start_downloads(urls: List[str], thread_count=8, ydl_opts = None) -> float:
+def start_downloads(urls: List[str], thread_count=8, ydl_opts=None) -> float:
     """
     Populate queue and start worker threads to download videos
     :param urls: list of URLs to download videos from
     :param thread_count: number of worker threads to use.  Default 8
+    :param ydl_opts: youtube-dl options string
     :return: None
     """
     global options
@@ -125,7 +126,7 @@ def get_video_name(url: str) -> str:
     return f_name
 
 
-def generate_options(path: str, template='%(title)s-%(id)s.%(ext)s') -> dict:
+def generate_options(path='out', template='%(title)s-%(id)s.%(ext)s') -> dict:
     path = os.path.join(path, template)
     print(path)
     return {
